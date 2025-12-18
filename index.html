@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大丈夫立志傳：從布衣到帝王</title>
+    <style>
+        :root {
+            --ancient-red: #8b0000;
+            --ancient-gold: #d4af37;
+            --paper: #fdf5e6;
+            --ink: #2c3e50;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            font-family: "Noto Serif TC", "Microsoft JhengHei", serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--ink);
+        }
+
+        #main-card {
+            background-color: var(--paper);
+            width: 90%;
+            max-width: 600px;
+            padding: 40px;
+            border: 8px double var(--ancient-red);
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.7);
+            position: relative;
+            text-align: center;
+        }
+
+        .header {
+            border-bottom: 2px solid var(--ancient-red);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        .status-box {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background: #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--ancient-red), var(--ancient-gold));
+            transition: width 0.5s ease;
+        }
+
+        .identity-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: var(--ancient-red);
+            color: white;
+            border-radius: 20px;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .question-area {
+            font-size: 1.4em;
+            margin: 30px 0;
+            min-height: 80px;
+        }
+
+        .input-group {
+            margin-top: 20px;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            font-size: 1.2em;
+            width: 60%;
+            border: 2px solid var(--ancient-red);
+            background: transparent;
+            text-align: center;
+            outline: none;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.2em;
+            background: var(--ancient-red);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #5d0000;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            height: 24px;
+            font-weight: bold;
+        }
+
+        .hidden { display: none; }
+
+        /* 帝王特效 */
+        .emperor-mode {
+            background-color: var(--ancient-gold) !important;
+            border-color: #fff !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="main-card">
+    <div id="game-ui">
+        <div class="header">
+            <h2>青雲直上：帝王之路</h2>
+        </div>
+
+        <div class="status-box">
+            <span>當前身分：<span id="rank-name">載入中</span></span>
+            <span id="level-indicator">1 / 11</span>
+        </div>
+
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+
+        <div class="identity-badge" id="badge">童生</div>
+
+        <div class="question-area" id="question">
+            </div>
+
+        <div class="input-group">
+            <input type="text" id="user-input" placeholder="請輸入答案" maxlength="4">
+            <button onclick="submitAnswer()">晉升</button>
+        </div>
+
+        <div id="feedback"></div>
+    </div>
+
+    <div id="victory-ui" class="hidden">
+        <h1 style="font-size: 3em; color: var(--ancient-red);">萬歲萬歲萬萬歲</h1>
+        <p style="font-size: 1.5em; line-height: 1.8;">
+            從一介<b>童生</b>開始，<br>
+            你歷經科舉、治縣、征戰與輔政，<br>
+            終在今日，登基為帝，改元開國！
+        </p>
+        <button onclick="location.reload()" style="background: gold; color: black; font-weight: bold;">重寫歷史</button>
+    </div>
+</div>
+
+<script>
+    const levels = [
+        { rank: "童生", q: "【科舉啟蒙】比喻勤奮苦讀：懸梁__股", a: "刺" },
+        { rank: "秀才", q: "【縣試過關】文筆優美流暢：行雲__水", a: "流" },
+        { rank: "舉人", q: "【鄉試中舉】比喻突然富貴：平步__雲", a: "青" },
+        { rank: "進士", q: "【殿試及第】形容得志時的喜悅：春風__意", a: "得" },
+        { rank: "翰林", q: "【文官之首】形容文采橫溢：才高__斗", a: "八" },
+        { rank: "捕快", q: "【基層執法】形容執法如山：明察__毫", a: "秋" },
+        { rank: "縣令", q: "【造福一方】愛護百姓如子：愛民__子", a: "如" },
+        { rank: "侍郎", q: "【朝廷重臣】處理公務勤奮：夙__夜寐", a: "興" },
+        { rank: "將軍", q: "【沙場點兵】氣勢威猛：氣吞__河", a: "山" },
+        { rank: "宰相", q: "【輔佐江山】權力極大：一人之__", a: "下" },
+        { rank: "帝王", q: "【終極試煉】治理天下：海晏__清", a: "河" }
+    ];
+
+    let currentIdx = 0;
+
+    const rankNameEl = document.getElementById('rank-name');
+    const levelIndEl = document.getElementById('level-indicator');
+    const progressBar = document.getElementById('progress-bar');
+    const badgeEl = document.getElementById('badge');
+    const questionEl = document.getElementById('question');
+    const inputEl = document.getElementById('user-input');
+    const feedbackEl = document.getElementById('feedback');
+
+    function updateUI() {
+        const stage = levels[currentIdx];
+        rankNameEl.innerText = stage.rank;
+        levelIndEl.innerText = `${currentIdx + 1} / ${levels.length}`;
+        badgeEl.innerText = stage.rank;
+        questionEl.innerText = stage.q;
+        inputEl.value = "";
+        feedbackEl.innerText = "";
+        
+        const progress = ((currentIdx) / (levels.length - 1)) * 100;
+        progressBar.style.width = progress + "%";
+
+        // 特殊關卡變色
+        if(stage.rank === "將軍") {
+            document.getElementById('main-card').style.boxShadow = "0 0 30px rgba(139, 0, 0, 0.8)";
+        }
+        if(stage.rank === "帝王") {
+            document.getElementById('main-card').classList.add('emperor-mode');
+        }
+    }
+
+    function submitAnswer() {
+        const val = inputEl.value.trim();
+        if (val === levels[currentIdx].a) {
+            feedbackEl.style.color = "green";
+            feedbackEl.innerText = "答對了！身分晉升！";
+            
+            setTimeout(() => {
+                if (currentIdx < levels.length - 1) {
+                    currentIdx++;
+                    updateUI();
+                } else {
+                    showVictory();
+                }
+            }, 1000);
+        } else {
+            feedbackEl.style.color = "red";
+            feedbackEl.innerText = "答錯了，請再思索！";
+            inputEl.value = "";
+        }
+    }
+
+    function showVictory() {
+        document.getElementById('game-ui').classList.add('hidden');
+        document.getElementById('victory-ui').classList.remove('hidden');
+        document.getElementById('main-card').style.backgroundColor = "#ffd700";
+    }
+
+    // 監聽 Enter 鍵
+    inputEl.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') submitAnswer();
+    });
+
+    // 初始化
+    updateUI();
+</script>
+
+</body>
+</html>
